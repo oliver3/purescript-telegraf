@@ -9,7 +9,8 @@ exports._startPolling = function (bot) {
   bot.startPolling()
 }
 
-exports._startWebhook = function (bot, path, port) {
+exports._startWebhook = function (bot, url, path, port) {
+  bot.telegram.setWebhook(url)
   bot.startWebhook(path, null, port)
 }
 

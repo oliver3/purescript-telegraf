@@ -3,7 +3,7 @@ module Telegraf where
 import Prelude
 
 import Control.Monad.Eff (Eff, kind Effect)
-import Control.Monad.Eff.Uncurried (EffFn1, EffFn2, EffFn3, mkEffFn1, runEffFn1, runEffFn2, runEffFn3)
+import Control.Monad.Eff.Uncurried (EffFn1, EffFn2, EffFn3, EffFn4, mkEffFn1, runEffFn1, runEffFn2, runEffFn3, runEffFn4)
 import Control.Monad.Reader (ReaderT, ask, lift, runReaderT)
 
 foreign import data Bot :: Type
@@ -15,7 +15,11 @@ type WithContext a = forall e. ReaderT Context (Eff (telegraf :: TELEGRAF | e)) 
 
 data Configuration
   = Polling { token :: String }
-  | Webhook { token :: String, path :: String, port :: Int }
+  | Webhook { token :: String, url :: String, path :: String, port :: Int }
+
+instance showConfiguration :: Show Configuration where
+  show (Polling _) = "Polling"
+  show (Webhook _) = "Webhook"
 
 -- | Listen to text messages.
 hears :: String -> WithContext Unit -> WithTelegraf Unit
@@ -40,14 +44,14 @@ runWithTelegraf (Polling {token}) withTelegraf = do
   bot <- runEffFn1 _construct token
   runReaderT withTelegraf bot
   runEffFn1 _startPolling bot
-runWithTelegraf (Webhook {token, path, port}) withTelegraf = do
+runWithTelegraf (Webhook {token, url, path, port}) withTelegraf = do
   bot <- runEffFn1 _construct token
   runReaderT withTelegraf bot
-  runEffFn3 _startWebhook bot path port
+  runEffFn4 _startWebhook bot url path port
 
 foreign import _construct :: forall e. EffFn1 (telegraf :: TELEGRAF | e) String Bot
 foreign import _startPolling :: forall e. EffFn1 (telegraf :: TELEGRAF | e) Bot Unit
-foreign import _startWebhook :: forall e. EffFn3 (telegraf :: TELEGRAF | e) Bot String Int Unit
+foreign import _startWebhook :: forall e. EffFn4 (telegraf :: TELEGRAF | e) Bot String String Int Unit
 
 -- | Make a FFI callback function from the WithContext
 mkCallback :: forall e ctx. ReaderT ctx (Eff e) Unit -> EffFn1 e ctx Unit
