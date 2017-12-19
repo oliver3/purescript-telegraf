@@ -9,6 +9,10 @@ exports._startPolling = function (bot) {
   bot.startPolling()
 }
 
+exports._startWebhook = function (bot, path, port) {
+  bot.startWebhook(path, null, port)
+}
+
 exports._hears = function (bot, s, cb) {
   bot.hears(s, cb)
 }

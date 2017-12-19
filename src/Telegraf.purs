@@ -13,18 +13,12 @@ foreign import data TELEGRAF :: Effect
 type WithTelegraf a = forall e. ReaderT Bot (Eff (telegraf :: TELEGRAF | e)) a
 type WithContext a = forall e. ReaderT Context (Eff (telegraf :: TELEGRAF | e)) a
 
--- | Initialize new Telegraf bot.
-construct :: forall e. String -> Eff (telegraf :: TELEGRAF | e) Bot
-construct = runEffFn1 _construct
-foreign import _construct :: forall e. EffFn1 (telegraf :: TELEGRAF | e) String Bot
-
--- | Start poll updates.
-startPolling :: forall e. Bot -> Eff (telegraf :: TELEGRAF | e) Unit
-startPolling = runEffFn1 _startPolling
-foreign import _startPolling :: forall e. EffFn1 (telegraf :: TELEGRAF | e) Bot Unit
+data Configuration
+  = Polling { token :: String }
+  | Webhook { token :: String, path :: String, port :: Int }
 
 -- | Listen to text messages.
-hears :: forall e. String -> WithContext Unit -> WithTelegraf Unit
+hears :: String -> WithContext Unit -> WithTelegraf Unit
 hears s withContext = do
   bot <- ask
   lift $ runEffFn3 _hears bot s (mkCallback withContext)
@@ -40,12 +34,20 @@ reply s = do
 
 foreign import _reply :: forall e. EffFn2 (telegraf :: TELEGRAF | e) String Context Unit
 
--- | Run a program within a WithTelegraf using polling and the token supplied
-runWithTelegraf :: forall e. String -> WithTelegraf Unit -> Eff (telegraf :: TELEGRAF | e) Unit
-runWithTelegraf token withTelegraf = do
-  bot <- construct token
+-- | Run a program within a WithTelegraf, using polling or webhook config
+runWithTelegraf :: forall e. Configuration -> WithTelegraf Unit -> Eff (telegraf :: TELEGRAF | e) Unit
+runWithTelegraf (Polling {token}) withTelegraf = do
+  bot <- runEffFn1 _construct token
   runReaderT withTelegraf bot
-  startPolling bot
+  runEffFn1 _startPolling bot
+runWithTelegraf (Webhook {token, path, port}) withTelegraf = do
+  bot <- runEffFn1 _construct token
+  runReaderT withTelegraf bot
+  runEffFn3 _startWebhook bot path port
+
+foreign import _construct :: forall e. EffFn1 (telegraf :: TELEGRAF | e) String Bot
+foreign import _startPolling :: forall e. EffFn1 (telegraf :: TELEGRAF | e) Bot Unit
+foreign import _startWebhook :: forall e. EffFn3 (telegraf :: TELEGRAF | e) Bot String Int Unit
 
 -- | Make a FFI callback function from the WithContext
 mkCallback :: forall e ctx. ReaderT ctx (Eff e) Unit -> EffFn1 e ctx Unit
