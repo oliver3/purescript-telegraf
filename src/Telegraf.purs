@@ -33,9 +33,12 @@ foreign import _hears :: forall e. EffFn3 (telegraf :: TELEGRAF | e) Bot String
 
 -- | Reply with a text message.
 reply :: String -> forall e. WithContext (telegraf :: TELEGRAF | e) Unit
-reply s = do
+reply msg = do
   ctx <- ask
-  lift $ runEffFn2 _reply s ctx
+  lift $ reply' msg ctx
+
+reply' :: String -> Context -> forall e. Eff (telegraf :: TELEGRAF | e) Unit
+reply' msg ctx = runEffFn2 _reply msg ctx
 
 foreign import _reply :: forall e. EffFn2 (telegraf :: TELEGRAF | e) String Context Unit
 
