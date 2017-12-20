@@ -5,6 +5,7 @@ import Prelude
 import Control.Monad.Eff (Eff, kind Effect)
 import Control.Monad.Eff.Uncurried (EffFn1, EffFn2, EffFn3, EffFn4, mkEffFn1, runEffFn1, runEffFn2, runEffFn3, runEffFn4)
 import Control.Monad.Reader (ReaderT, ask, lift, runReaderT)
+import Data.Maybe (Maybe(..))
 
 foreign import data Bot :: Type
 foreign import data Context :: Type
@@ -37,6 +38,22 @@ reply s = do
   lift $ runEffFn2 _reply s ctx
 
 foreign import _reply :: forall e. EffFn2 (telegraf :: TELEGRAF | e) String Context Unit
+
+type User =
+  { id :: Int
+  , is_bot :: Boolean
+  , first_name :: String
+  , last_name :: Maybe String
+  , username :: Maybe String
+  , language_code :: Maybe String
+  }
+
+getFrom :: WithContext User
+getFrom = do
+  ctx <- ask
+  lift $ runEffFn3 _getFrom Just Nothing ctx
+
+foreign import _getFrom :: forall e. EffFn3 (telegraf :: TELEGRAF | e) (String -> Maybe String) (Maybe String) Context User
 
 -- | Run a program within a WithTelegraf, using polling or webhook config
 runWithTelegraf :: forall e. Configuration -> WithTelegraf Unit -> Eff (telegraf :: TELEGRAF | e) Unit
