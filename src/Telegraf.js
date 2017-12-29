@@ -33,3 +33,18 @@ exports._getFrom = function (just, nothing, ctx) {
     language_code: ctx.from.language_code ? just(String(ctx.from.language_code)) : nothing
   }
 }
+
+exports._getChat = function (just, nothing, ctx) {
+  return {
+    id: Number(ctx.chat.id) | 0,
+    type: String(ctx.chat.type), // private, group, supergroup, channel
+    title: ctx.chat.title ? just(String(ctx.chat.title)) : nothing,
+    username: ctx.chat.username ? just(String(ctx.chat.username)) : nothing,
+    first_name: ctx.chat.first_name ? just(String(ctx.chat.first_name)) : nothing,
+    last_name: ctx.chat.last_name ? just(String(ctx.chat.last_name)) : nothing,
+  }
+}
+
+exports._sendMessage = function (bot, id, msg) {
+  bot.telegram.sendMessage(id, msg)
+}

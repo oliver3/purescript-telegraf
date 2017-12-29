@@ -49,10 +49,32 @@ type User =
   , language_code :: Maybe String
   }
 
+type Chat =
+  { id :: Int
+  , type :: String -- private, group, supergroup, channel
+  , title :: Maybe String
+  , username :: Maybe String
+  , first_name :: Maybe String
+  , last_name :: Maybe String
+  -- , all_members_are_administrators :: Maybe Boolean
+  }
+
 getFrom :: forall e. WithContext (telegraf :: TELEGRAF | e) User
 getFrom = withContext $ runEffFn3 _getFrom Just Nothing
 
 foreign import _getFrom :: forall e. EffFn3 (telegraf :: TELEGRAF | e) (String -> Maybe String) (Maybe String) Context User
+
+getChat :: forall e. WithContext (telegraf :: TELEGRAF | e) User
+getChat = withContext $ runEffFn3 _getChat Just Nothing
+
+foreign import _getChat :: forall e. EffFn3 (telegraf :: TELEGRAF | e) (String -> Maybe String) (Maybe String) Context User
+
+sendMessage :: forall e. String -> String -> WithTelegraf (telegraf :: TELEGRAF | e) Unit
+sendMessage id msg = do
+  bot <- ask
+  lift $ runEffFn3 _sendMessage bot id msg
+
+foreign import _sendMessage :: forall e. EffFn3 (telegraf :: TELEGRAF | e) Bot String String Unit
 
 -- | Run a program within a WithTelegraf, using polling or webhook config
 runWithTelegraf :: forall e. Configuration -> WithTelegraf (telegraf :: TELEGRAF | e) Unit -> Eff (telegraf :: TELEGRAF | e) Unit
