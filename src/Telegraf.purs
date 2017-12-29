@@ -24,18 +24,16 @@ instance showConfiguration :: Show Configuration where
 
 -- | Listen to text messages.
 hears :: forall e. String -> WithContext (telegraf :: TELEGRAF | e) Unit -> WithTelegraf (telegraf :: TELEGRAF | e) Unit
-hears s withContext = do
+hears s respond = do
   bot <- ask
-  lift $ runEffFn3 _hears bot s (mkCallback withContext)
+  lift $ runEffFn3 _hears bot s (mkCallback respond)
 
 foreign import _hears :: forall e. EffFn3 (telegraf :: TELEGRAF | e) Bot String
   (EffFn1 (telegraf :: TELEGRAF | e) Context Unit) Unit
 
 -- | Reply with a text message.
 reply :: String -> forall e. WithContext (telegraf :: TELEGRAF | e) Unit
-reply msg = do
-  ctx <- ask
-  lift $ reply' msg ctx
+reply msg = withContext $ reply' msg
 
 reply' :: String -> Context -> forall e. Eff (telegraf :: TELEGRAF | e) Unit
 reply' msg ctx = runEffFn2 _reply msg ctx
@@ -52,9 +50,7 @@ type User =
   }
 
 getFrom :: forall e. WithContext (telegraf :: TELEGRAF | e) User
-getFrom = do
-  ctx <- ask
-  lift $ runEffFn3 _getFrom Just Nothing ctx
+getFrom = withContext $ runEffFn3 _getFrom Just Nothing
 
 foreign import _getFrom :: forall e. EffFn3 (telegraf :: TELEGRAF | e) (String -> Maybe String) (Maybe String) Context User
 
@@ -77,3 +73,8 @@ foreign import _startWebhook :: forall e. EffFn4 (telegraf :: TELEGRAF | e) Bot 
 mkCallback :: forall e. WithContext e Unit -> EffFn1 e Context Unit
 mkCallback withContext = mkEffFn1 (runReaderT withContext)
 
+-- | Wrap a function that needs a Context in the WithContext monad
+withContext :: forall eff a. (Context -> Eff eff a) -> WithContext eff a
+withContext fn = do
+  ctx <- ask
+  lift $ fn ctx
