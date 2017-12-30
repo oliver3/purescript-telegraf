@@ -64,10 +64,10 @@ getFrom = withContext $ runEffFn3 _getFrom Just Nothing
 
 foreign import _getFrom :: forall e. EffFn3 (telegraf :: TELEGRAF | e) (String -> Maybe String) (Maybe String) Context User
 
-getChat :: forall e. WithContext (telegraf :: TELEGRAF | e) User
+getChat :: forall e. WithContext (telegraf :: TELEGRAF | e) Chat
 getChat = withContext $ runEffFn3 _getChat Just Nothing
 
-foreign import _getChat :: forall e. EffFn3 (telegraf :: TELEGRAF | e) (String -> Maybe String) (Maybe String) Context User
+foreign import _getChat :: forall e. EffFn3 (telegraf :: TELEGRAF | e) (String -> Maybe String) (Maybe String) Context Chat
 
 sendMessage :: forall e. String -> String -> WithTelegraf (telegraf :: TELEGRAF | e) Unit
 sendMessage id msg = do
