@@ -4,15 +4,15 @@ import Prelude
 
 import Control.Monad.Eff (Eff, kind Effect)
 import Control.Monad.Eff.Uncurried (EffFn1, EffFn2, EffFn3, EffFn4, mkEffFn1, runEffFn1, runEffFn2, runEffFn3, runEffFn4)
-import Control.Monad.Reader (ReaderT, ask, lift, runReaderT)
+import Control.Monad.Reader (ReaderT, asks, lift, runReaderT)
 import Data.Maybe (Maybe(..))
 
 foreign import data Bot :: Type
 foreign import data Context :: Type
 foreign import data TELEGRAF :: Effect
 
-type WithTelegraf eff a = ReaderT Bot (Eff eff) a
-type WithContext eff a = ReaderT Context (Eff eff) a
+type WithTelegraf eff a = forall r. ReaderT { bot :: Bot | r } (Eff eff) a
+type WithContext eff a = forall r. ReaderT { ctx :: Context | r } (Eff eff) a
 
 data Configuration
   = Polling { token :: String }
@@ -25,7 +25,7 @@ instance showConfiguration :: Show Configuration where
 -- | Listen to text messages.
 hears :: forall e. String -> WithContext (telegraf :: TELEGRAF | e) Unit -> WithTelegraf (telegraf :: TELEGRAF | e) Unit
 hears s respond = do
-  bot <- ask
+  bot <- asks _.bot
   lift $ runEffFn3 hearsImpl bot s (mkCallback respond)
 
 foreign import hearsImpl :: forall e. EffFn3 (telegraf :: TELEGRAF | e) Bot String
@@ -71,20 +71,20 @@ foreign import getChatImpl :: forall e. EffFn3 (telegraf :: TELEGRAF | e) (Strin
 
 sendMessage :: forall e. Int -> String -> WithTelegraf (telegraf :: TELEGRAF | e) Unit
 sendMessage id msg = do
-  bot <- ask
+  bot <- asks _.bot
   lift $ runEffFn3 sendMessageImpl bot id msg
 
 foreign import sendMessageImpl :: forall e. EffFn3 (telegraf :: TELEGRAF | e) Bot Int String Unit
 
 -- | Run a program within a WithTelegraf, using polling or webhook config
 runWithTelegraf :: forall e. Configuration -> WithTelegraf (telegraf :: TELEGRAF | e) Unit -> Eff (telegraf :: TELEGRAF | e) Unit
-runWithTelegraf (Polling {token}) withTelegraf = do
+runWithTelegraf (Polling {token}) rules = do
   bot <- runEffFn1 constructImpl token
-  runReaderT withTelegraf bot
+  runReaderT rules { bot }
   runEffFn1 startPollingImpl bot
-runWithTelegraf (Webhook {token, url, path, port}) withTelegraf = do
+runWithTelegraf (Webhook {token, url, path, port}) rules = do
   bot <- runEffFn1 constructImpl token
-  runReaderT withTelegraf bot
+  runReaderT rules { bot }
   runEffFn4 startWebhookImpl bot url path port
 
 foreign import constructImpl :: forall e. EffFn1 (telegraf :: TELEGRAF | e) String Bot
@@ -93,10 +93,10 @@ foreign import startWebhookImpl :: forall e. EffFn4 (telegraf :: TELEGRAF | e) B
 
 -- | Make a FFI callback function from the WithContext
 mkCallback :: forall e. WithContext e Unit -> EffFn1 e Context Unit
-mkCallback withContext = mkEffFn1 (runReaderT withContext)
+mkCallback withContext = mkEffFn1 ({ ctx: _ } >>> (runReaderT withContext))
 
 -- | Wrap a function that needs a Context in the WithContext monad
 withContext :: forall eff a. (Context -> Eff eff a) -> WithContext eff a
 withContext fn = do
-  ctx <- ask
+  ctx <- asks _.ctx
   lift $ fn ctx
