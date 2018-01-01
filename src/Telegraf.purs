@@ -75,7 +75,10 @@ foreign import getChatImpl :: forall e. EffFn3 (telegraf :: TELEGRAF | e) (Strin
 sendMessage :: forall e. Int -> String -> WithTelegraf (telegraf :: TELEGRAF | e) Unit
 sendMessage id msg = do
   bot <- asks _.bot
-  lift $ toAffE $ runEffFn3 sendMessageImpl bot id msg
+  lift $ sendMessage' id msg bot
+
+sendMessage' :: forall e. Int -> String -> Bot -> Aff (telegraf :: TELEGRAF | e) Unit
+sendMessage' id msg bot = toAffE $ runEffFn3 sendMessageImpl bot id msg
 
 foreign import sendMessageImpl :: forall e. EffFn3 (telegraf :: TELEGRAF | e) Bot Int String (Promise Unit)
 
