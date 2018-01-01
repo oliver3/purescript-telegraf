@@ -20,7 +20,7 @@ exports.hearsImpl = function (bot, s, cb) {
 }
 
 exports.replyImpl = function (s, ctx) {
-  ctx.reply(s)
+  return ctx.reply(s)
 }
 
 exports.getFromImpl = function (just, nothing, ctx) {
@@ -46,5 +46,5 @@ exports.getChatImpl = function (just, nothing, ctx) {
 }
 
 exports.sendMessageImpl = function (bot, id, msg) {
-  bot.telegram.sendMessage(id, msg)
+  return bot.telegram.sendMessage(id, msg)
 }
