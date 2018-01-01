@@ -26,9 +26,9 @@ instance showConfiguration :: Show Configuration where
 hears :: forall e. String -> WithContext (telegraf :: TELEGRAF | e) Unit -> WithTelegraf (telegraf :: TELEGRAF | e) Unit
 hears s respond = do
   bot <- ask
-  lift $ runEffFn3 _hears bot s (mkCallback respond)
+  lift $ runEffFn3 hearsImpl bot s (mkCallback respond)
 
-foreign import _hears :: forall e. EffFn3 (telegraf :: TELEGRAF | e) Bot String
+foreign import hearsImpl :: forall e. EffFn3 (telegraf :: TELEGRAF | e) Bot String
   (EffFn1 (telegraf :: TELEGRAF | e) Context Unit) Unit
 
 -- | Reply with a text message.
@@ -36,9 +36,9 @@ reply :: String -> forall e. WithContext (telegraf :: TELEGRAF | e) Unit
 reply msg = withContext $ reply' msg
 
 reply' :: String -> Context -> forall e. Eff (telegraf :: TELEGRAF | e) Unit
-reply' msg ctx = runEffFn2 _reply msg ctx
+reply' msg ctx = runEffFn2 replyImpl msg ctx
 
-foreign import _reply :: forall e. EffFn2 (telegraf :: TELEGRAF | e) String Context Unit
+foreign import replyImpl :: forall e. EffFn2 (telegraf :: TELEGRAF | e) String Context Unit
 
 type User =
   { id :: Int
@@ -60,36 +60,36 @@ type Chat =
   }
 
 getFrom :: forall e. WithContext (telegraf :: TELEGRAF | e) User
-getFrom = withContext $ runEffFn3 _getFrom Just Nothing
+getFrom = withContext $ runEffFn3 getFromImpl Just Nothing
 
-foreign import _getFrom :: forall e. EffFn3 (telegraf :: TELEGRAF | e) (String -> Maybe String) (Maybe String) Context User
+foreign import getFromImpl :: forall e. EffFn3 (telegraf :: TELEGRAF | e) (String -> Maybe String) (Maybe String) Context User
 
 getChat :: forall e. WithContext (telegraf :: TELEGRAF | e) Chat
-getChat = withContext $ runEffFn3 _getChat Just Nothing
+getChat = withContext $ runEffFn3 getChatImpl Just Nothing
 
-foreign import _getChat :: forall e. EffFn3 (telegraf :: TELEGRAF | e) (String -> Maybe String) (Maybe String) Context Chat
+foreign import getChatImpl :: forall e. EffFn3 (telegraf :: TELEGRAF | e) (String -> Maybe String) (Maybe String) Context Chat
 
-sendMessage :: forall e. String -> String -> WithTelegraf (telegraf :: TELEGRAF | e) Unit
+sendMessage :: forall e. Int -> String -> WithTelegraf (telegraf :: TELEGRAF | e) Unit
 sendMessage id msg = do
   bot <- ask
-  lift $ runEffFn3 _sendMessage bot id msg
+  lift $ runEffFn3 sendMessageImpl bot id msg
 
-foreign import _sendMessage :: forall e. EffFn3 (telegraf :: TELEGRAF | e) Bot String String Unit
+foreign import sendMessageImpl :: forall e. EffFn3 (telegraf :: TELEGRAF | e) Bot Int String Unit
 
 -- | Run a program within a WithTelegraf, using polling or webhook config
 runWithTelegraf :: forall e. Configuration -> WithTelegraf (telegraf :: TELEGRAF | e) Unit -> Eff (telegraf :: TELEGRAF | e) Unit
 runWithTelegraf (Polling {token}) withTelegraf = do
-  bot <- runEffFn1 _construct token
+  bot <- runEffFn1 constructImpl token
   runReaderT withTelegraf bot
-  runEffFn1 _startPolling bot
+  runEffFn1 startPollingImpl bot
 runWithTelegraf (Webhook {token, url, path, port}) withTelegraf = do
-  bot <- runEffFn1 _construct token
+  bot <- runEffFn1 constructImpl token
   runReaderT withTelegraf bot
-  runEffFn4 _startWebhook bot url path port
+  runEffFn4 startWebhookImpl bot url path port
 
-foreign import _construct :: forall e. EffFn1 (telegraf :: TELEGRAF | e) String Bot
-foreign import _startPolling :: forall e. EffFn1 (telegraf :: TELEGRAF | e) Bot Unit
-foreign import _startWebhook :: forall e. EffFn4 (telegraf :: TELEGRAF | e) Bot String String Int Unit
+foreign import constructImpl :: forall e. EffFn1 (telegraf :: TELEGRAF | e) String Bot
+foreign import startPollingImpl :: forall e. EffFn1 (telegraf :: TELEGRAF | e) Bot Unit
+foreign import startWebhookImpl :: forall e. EffFn4 (telegraf :: TELEGRAF | e) Bot String String Int Unit
 
 -- | Make a FFI callback function from the WithContext
 mkCallback :: forall e. WithContext e Unit -> EffFn1 e Context Unit

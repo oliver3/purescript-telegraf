@@ -1,29 +1,29 @@
 const Telegraf = require('telegraf')
 
-exports._construct = function (token) {
+exports.constructImpl = function (token) {
   const bot = new Telegraf(token, {})
   return bot
 }
 
-exports._startPolling = function (bot) {
+exports.startPollingImpl = function (bot) {
   bot.telegram.deleteWebhook()
   bot.startPolling()
 }
 
-exports._startWebhook = function (bot, url, path, port) {
+exports.startWebhookImpl = function (bot, url, path, port) {
   bot.telegram.setWebhook(url)
   bot.startWebhook(path, null, port)
 }
 
-exports._hears = function (bot, s, cb) {
+exports.hearsImpl = function (bot, s, cb) {
   bot.hears(s, cb)
 }
 
-exports._reply = function (s, ctx) {
+exports.replyImpl = function (s, ctx) {
   ctx.reply(s)
 }
 
-exports._getFrom = function (just, nothing, ctx) {
+exports.getFromImpl = function (just, nothing, ctx) {
   return {
     id: Number(ctx.from.id) | 0,
     is_bot: Boolean(ctx.from.is_bot),
@@ -34,7 +34,7 @@ exports._getFrom = function (just, nothing, ctx) {
   }
 }
 
-exports._getChat = function (just, nothing, ctx) {
+exports.getChatImpl = function (just, nothing, ctx) {
   return {
     id: Number(ctx.chat.id) | 0,
     type: String(ctx.chat.type), // private, group, supergroup, channel
@@ -45,6 +45,6 @@ exports._getChat = function (just, nothing, ctx) {
   }
 }
 
-exports._sendMessage = function (bot, id, msg) {
+exports.sendMessageImpl = function (bot, id, msg) {
   bot.telegram.sendMessage(id, msg)
 }
